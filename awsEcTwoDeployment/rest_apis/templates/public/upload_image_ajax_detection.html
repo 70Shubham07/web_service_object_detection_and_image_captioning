@@ -1,0 +1,198 @@
+{% extends "public/templates/public_template.html" %}
+
+{% block title %}Upload{% endblock %}
+
+{% block main %}
+
+
+<div class="container">
+    <form method="post" action="" enctype="multipart/form-data" id="myform">
+        <div class='preview'>
+
+<!--         	Add alt-text here -->
+            <img src="" id="img" width="300" height="300" alt="Upload an image">
+        </div>
+        <div >
+            <input type="file" id="file" name="image" />
+            <input type="button" class="button" value="Discover Similar" id="but_upload">
+        </div>
+    </form>
+
+    <select id="modelToUse">
+      <option value="objects">Objects</option>
+      <option value="story">Story</option>
+    </select>
+
+
+</div>
+
+  
+
+<h2 id="forUx"></h2>
+
+
+<div id="response"></div>
+
+
+
+{% endblock %}
+
+
+{% block script %}
+
+
+<script>
+	$(document).ready(function(){
+
+
+        $("#file").change(function () { 
+                            const file = this.files[0]; 
+                            if (file) { 
+                                let reader = new FileReader(); 
+                                reader.onload = function (event) { 
+
+                                    console.log( "event.target.result: ", event.target.result )
+                                    $("#img").attr("src", event.target.result); 
+                                }; 
+                                reader.readAsDataURL(file); 
+                            } 
+                        });
+
+
+	    $("#but_upload").click(function(){
+
+	        let fd = new FormData();
+	        let files = $('#file')[0].files[0];
+
+
+	        fd.append( 'file',files) ;
+            fd.append( 'model', $("#modelToUse").val() )
+
+            // $("#img").attr("src", fd.files)             
+
+	        console.log("button clicked", location.host, typeof location.host)
+
+	        $.ajax({
+	            url: 'http://127.0.0.1:5000/find-images',
+	            type: 'post',
+	            data: fd,
+	            contentType: false,
+	            processData: false,
+	            success: function(response){
+
+	                if( response  ){
+	                	console.log(response)
+
+/*                        document.getElementById('legend').innerHTML = "Your HTML here"
+*/
+                        $("#forUx").text("Images will appear below ...")
+                        $("#img").attr("src", response.imgPath) 
+                        $(".preview img").show() // Display image element
+
+
+	                	getStatus( response.taskId )
+
+					}
+	                else{
+	                    alert('file not uploaded');
+	                }
+	            },
+	        })
+	    })
+	})
+
+
+	function getStatus(taskId) {
+
+
+			console.log( "This is taskId: ", taskId )
+            const poll = function() {
+                $.ajax(
+                    {
+                        url: 'http://127.0.0.1:5000/getTheUrlsOfImagesFound',
+                        dataType: 'JSON',
+                        data: {  "taskId" : taskId},
+                        type: 'POST',
+                        success:    function(data) {
+                                        console.log("call was a success: ", data.status)
+                                        if ( data.status == "success" ) { 
+
+                                            console.log("got the needed data: ", data)
+
+                                            clearInterval(pollInterval)
+
+                                            // Call another function here that sends a POSt request to some API with the image URLS in a json,
+                                            // and appends image divs to an empty div in this html    
+
+                                            console.log( "Polling over, now render images" )
+/*                                            console.log( "These are image URLs: ", data["task_result"] )
+*/
+                                            console.log( "keys of data: ", Object.keys( data ) )
+                                            getImageDivsAndAppendToEmptyDiv( data["data"]["task_result"] )
+
+                                        }
+                                        else{
+                                        	console.log( "task not completed yet" )
+                                        }
+                                    },
+                        
+                        error:  function() { 
+                                    console.log('Error!');
+                                },
+
+                    }
+                )
+            }
+
+            const pollInterval = setInterval(
+                function() {
+                    poll()
+
+                }, 3000
+            )
+
+	}
+
+
+
+    function getImageDivsAndAppendToEmptyDiv( imageUrls ){
+
+        console.log( "These are imageUrls: ", imageUrls )
+/*        https://stackoverflow.com/questions/33120988/send-array-from-ajax-to-flask-not-working
+*/
+        $.ajax(
+            {
+                url: 'http://127.0.0.1:5000/getImageDivs',
+                dataType: 'JSON',
+                data: {  "imageUrls" : imageUrls},
+                type: 'POST',
+                success:    function(data) {
+                                $("#forUx").text("Following images were found")
+                                $('div#response').append(data.divsOfImages);
+
+                            },
+                
+                error:  function() { 
+                            console.log('Error!');
+                        },
+
+            }
+        )
+
+
+    }
+
+
+</script>
+
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
