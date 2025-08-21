@@ -327,4 +327,5 @@ This project is for educational and research purposes. Please ensure compliance 
 
 ---
 
-**Note**: This application requires pre-trained AI models that are not included in the repository due to size constraints. Please obtain appropriate model files and place them in the specified directories before running the application.
+**Note**: This application requires pre-trained AI models that are not included in the repository due to size constraints. 
+
